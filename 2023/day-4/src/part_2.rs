@@ -3,38 +3,44 @@ use std::collections::BTreeSet;
 pub fn main() {
     let content = std::fs::read_to_string("input.txt").unwrap();
 
-    let num_wins: Vec<usize> = content.lines().map(|line| parse_card(line)).collect();
-    let mut num_cards: Vec<usize> = num_wins.iter().map(|_| 1).collect();
+    let mut cards: Vec<_> = content
+        .lines()
+        .map(|line| Card {
+            matches: parse_card(line),
+            count: 1,
+        })
+        .collect();
 
-    let mut n_wins = &num_wins[..];
-    let mut n_cards = &mut num_cards[..];
-    while let ([c_wins, r_wins @ ..], [c_cards, r_cards @ ..]) = (n_wins, n_cards) {
-        let end = std::cmp::min(c_wins, r_cards.len());
-        for num_card in &mut num_cards[..end] {
-            *num_card += current_cards;
+    let mut ptr_cards = &mut cards[..];
+
+    while let [current_card, remaining_cards @ ..] = ptr_cards {
+        let end = std::cmp::min(current_card.matches, remaining_cards.len());
+
+        for card in &mut remaining_cards[..end] {
+            card.count += current_card.count;
         }
+
+        ptr_cards = remaining_cards;
     }
 
-    let total: usize = num_cards.into_iter().sum();
+    let total: usize = cards.into_iter().map(|card| card.count).sum();
     println!("{total}");
     assert_eq!(total, 9997537);
 }
 
+struct Card {
+    matches: usize,
+    count: usize,
+}
+
 fn parse_card(s: &str) -> usize {
     let (_, card) = s.split_once(':').unwrap();
-    let (winnings, numbers) = card.split_once('|').unwrap();
+    let (winners, numbers) = card.split_once('|').unwrap();
 
-    let to_numbers = |s: &str| -> BTreeSet<u32> {
-        s.trim()
-            .split(' ')
-            .filter(|s| !s.is_empty())
-            //.inspect(|x| { dbg!(&x); })
-            .map(|s| s.parse().unwrap())
-            .collect()
-    };
+    let find_numbers = |s: &str| s.split_whitespace().map(|s| s.parse().unwrap()).collect();
 
-    let winnings = to_numbers(winnings);
-    let numbers = to_numbers(numbers);
+    let winners: BTreeSet<u32> = find_numbers(winners);
+    let numbers: BTreeSet<u32> = find_numbers(numbers);
 
-    BTreeSet::intersection(&winnings, &numbers).count()
+    BTreeSet::intersection(&winners, &numbers).count()
 }
