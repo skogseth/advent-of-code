@@ -12,14 +12,10 @@ pub fn main() {
         .collect();
 
     let mut ptr_cards = &mut cards[..];
-
     while let [current_card, remaining_cards @ ..] = ptr_cards {
-        let end = std::cmp::min(current_card.matches, remaining_cards.len());
-
-        for card in &mut remaining_cards[..end] {
+        for card in remaining_cards.iter_mut().take(current_card.matches) {
             card.count += current_card.count;
         }
-
         ptr_cards = remaining_cards;
     }
 
